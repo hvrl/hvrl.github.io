@@ -1,0 +1,656 @@
+
+backend:
+  name: github
+  repo: hvrl/hvrl-site
+  branch: main
+
+publish_mode: editorial_workflow
+
+media_folder: src/assets/images
+public_folder: /images
+
+slug:
+  encoding: ascii
+  clean_accents: true
+
+media_libraries:
+  stock_assets: false
+  default:
+    config:
+      transformations: &picture_transformations
+        raster_image: { format: webp, quality: 85, width: 2400, height: 2400 }
+        heic: { format: webp, quality: 85, width: 2400, height: 2400 }
+
+output:
+  omit_empty_optional_fields: true
+
+app_title: HVRLサイト編集
+logo:
+  src: /favicon.svg
+
+site_url: https://hvrl.github.io
+display_url: https://hvrl.github.io
+
+collections:
+  - name: publications
+    label: Publications
+    icon: menu_book
+    label_singular: Paper
+    folder: src/content/publications
+    extension: yaml
+    format: yaml
+    create: true
+    identifier_field: title
+    slug: '{{fields.year}}-{{fields.shortName}}'
+    summary: '{{fields.year}} · {{fields.title}}'
+    sortable_fields:
+      fields: [year]
+      default:
+        field: year
+        direction: descending
+    view_groups:
+      groups:
+        - { name: year, label: Year, field: year }
+        - { name: type, label: Category, field: type }
+        - { name: language, label: Language, field: language }
+      default: year
+    view_filters:
+      filters:
+        - { name: conference, label: Conference, field: type, pattern: '^conference$' }
+        - { name: journal, label: Journal, field: type, pattern: '^journal$' }
+        - { name: talk, label: Talk, field: type, pattern: '^talk$' }
+        - { name: english, label: English, field: language, pattern: '^en$' }
+        - { name: japanese, label: Japanese, field: language, pattern: '^ja$' }
+    media_folder: /src/assets/images/publications
+    public_folder: /images/publications
+    fields:
+      - { name: title, label: Title }
+      - name: shortName
+        label: Short name
+        widget: short-name
+        hint: |-
+          ファイル名やリンクに用いるための短い名前。Titleをもとに自動で候補が入るので、必要に応じて直す。
+          ・英小文字、数字、ハイフンのみ
+          ・論文のTitleに略称があればそれを用いる。　例：Ev4DGS → ev4dgs
+          ・なければキーワード2〜4語　例：dense-depth-event-focal-stack
+          ・日本語の論文は第一著者の姓と学会名　例：inamoto-miru
+          ・作成後に変更しても、ファイル名は変わらない。
+        pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', '英小文字・数字・ハイフンで入力してください（例：ev4dgs）']
+      - name: authors
+        label: Authors
+        hint: |-
+          1人1行、論文の著者順に登録する。
+          共同筆頭著者は名前の後ろに\*を付ける（2人以上に\*が付いていれば、自動で「\*Equal contribution」の注記が入る）。　例：Taro Keio\*
+        widget: list
+        field: { name: author, label: Author }
+      - name: type
+        label: Category
+        hint: Conference：学会　Journal：論文誌　Talk：招待講演など
+        widget: select
+        options:
+          - { label: Conference, value: conference }
+          - { label: Journal, value: journal }
+          - { label: Talk, value: talk }
+      - name: language
+        label: Language
+        widget: select
+        options:
+          - { label: English, value: en }
+          - { label: Japanese, value: ja }
+      - { name: year, label: Year, widget: string, pattern: ['^\d{4}$', '4桁の西暦で入力してください'] }
+      - { name: month, label: Month, widget: number, value_type: int, min: 1, max: 12, hint: 学会は開催した月、論文誌は掲載された月 }
+      - { name: day, label: Day, widget: number, value_type: int, min: 1, max: 31, required: false, hint: 同じ月の論文の並び順を決めたいときだけ入れる（学会は開催初日、論文誌は掲載日）。新しい日付ほど上に並ぶ。 }
+      - name: venue
+        label: Venue
+        widget: venue
+        hint: |-
+          学会名・論文誌名。入力すると候補が出るため、候補にある場合はその中から選んで表記を揃える。
+          候補にない場合は、以下に従って入力する。
+          ・学会：正式名称＋括弧書きで略称（あれば）　例：IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)
+          ・論文誌：正式名称＋括弧書きで略称（あれば）　例：IEEE Access、IEEE Open Journal of Signal Processing (OJSP)
+          ・学会の中で開かれたワークショップ：学会名＋Workshops（個々のワークショップ名は書かない）　例：IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW)
+          　ただし、独自の論文集を出すワークショップはその名前（例：ACM International Workshop on Multimedia Content Analysis in Sports (MMSports)）
+      - name: doi
+        label: DOI
+        widget: doi
+        required: false
+        hint: 'DOIのリンク（`https://doi.org/…`）を貼り付けると、10.から始まる部分のみが入る。'
+        pattern: ['^10\.\d{4,9}/\S+$', '10.で始まるDOIを入力してください']
+      - name: links
+        label: Links
+        hint: 論文の下にボタンとして並ぶリンク。「Linksを追加」で種類を選ぶと、その種類の欄が出る。
+        widget: list
+        required: false
+        allow_reorder: false
+        summary: '{{fields.url}}{{fields.file}}'
+        types:
+          - name: paper
+            label: Paper
+            widget: object
+            fields:
+              - name: url
+                label: URL
+                hint: "論文を無料で読めるページ（学会の公開論文集、HAL・大学のリポジトリなど）。DOIがない論文は出版社・学会の掲載ページ。DOIと同じページは入れない\n例：`https://openaccess.thecvf.com/content/CVPR2024/html/….html`"
+                pattern: ['^(https?://\S+|/files/publications/[^/]+\.pdf)$', 'https://から始まるURLを入力してください']
+          - name: arxiv
+            label: arXiv
+            widget: object
+            fields:
+              - name: url
+                label: URL
+                hint: "arXivの論文ページ　例：`https://arxiv.org/abs/2603.16233`"
+                pattern: ['^(https?://\S+|/files/publications/[^/]+\.pdf)$', 'https://から始まるURLを入力してください']
+          - name: project
+            label: Project
+            widget: object
+            fields:
+              - name: url
+                label: URL
+                hint: "論文のプロジェクトページ"
+                pattern: ['^(https?://\S+|/files/publications/[^/]+\.pdf)$', 'https://から始まるURLを入力してください']
+          - name: code
+            label: Code
+            widget: object
+            fields:
+              - name: url
+                label: URL
+                hint: "ソースコードのリポジトリ"
+                pattern: ['^(https?://\S+|/files/publications/[^/]+\.pdf)$', 'https://から始まるURLを入力してください']
+          - name: video
+            label: Video
+            widget: object
+            fields:
+              - name: url
+                label: URL
+                hint: "研究紹介動画のページ（YouTubeなど）"
+                pattern: ['^(https?://\S+|/files/publications/[^/]+\.pdf)$', 'https://から始まるURLを入力してください']
+          - name: slides
+            label: Slides
+            widget: object
+            fields:
+              - name: url
+                label: URL
+                required: false
+                hint: "スライドの掲載ページ（Speaker Deckなど）。PDFを載せる場合はURLを空欄にして、下のFileにアップロードする。"
+                pattern: ['^(https?://\S+|/files/publications/[^/]+\.pdf)$', 'https://から始まるURLを入力してください']
+              - name: file
+                label: File
+                widget: file
+                choose_url: false
+                required: false
+                accept: application/pdf
+                media_folder: /public/files/publications
+                public_folder: /files/publications
+                media_libraries:
+                  default:
+                    config: { max_file_size: 20000000, filename_template: '{{slug}}-slides' }
+                hint: "スライドのPDF（20MBまで）"
+          - name: poster
+            label: Poster
+            widget: object
+            fields:
+              - name: url
+                label: URL
+                required: false
+                hint: "ポスターの掲載ページ（Speaker Deckなど）。PDFを載せる場合はURLを空欄にして、下のFileにアップロードする。"
+                pattern: ['^(https?://\S+|/files/publications/[^/]+\.pdf)$', 'https://から始まるURLを入力してください']
+              - name: file
+                label: File
+                widget: file
+                choose_url: false
+                required: false
+                accept: application/pdf
+                media_folder: /public/files/publications
+                public_folder: /files/publications
+                media_libraries:
+                  default:
+                    config: { max_file_size: 20000000, filename_template: '{{slug}}-poster' }
+                hint: "ポスターのPDF（20MBまで）"
+          - name: dataset
+            label: Dataset
+            widget: object
+            fields:
+              - name: url
+                label: URL
+                hint: "データセットのページ"
+                pattern: ['^(https?://\S+|/files/publications/[^/]+\.pdf)$', 'https://から始まるURLを入力してください']
+          - name: website
+            label: Website
+            widget: object
+            fields:
+              - name: url
+                label: URL
+                hint: "どれにも当てはまらない関連ページ（ニュース記事など）"
+                pattern: ['^(https?://\S+|/files/publications/[^/]+\.pdf)$', 'https://から始まるURLを入力してください']
+      - name: thumbnail
+        label: Thumbnail
+        widget: image
+        choose_url: false
+        required: false
+        media_libraries:
+          default:
+            config: { filename_template: '{{slug}}', transformations: *picture_transformations }
+        hint: Webサイト上では、3:2の枠に収まるように余白が付く。
+      - name: xPost
+        label: News
+        widget: post-text
+        kind: paper
+        required: false
+      - name: moreHeading
+        label: 以降はオプション（必要に応じて）
+        widget: heading
+        required: false
+      - { name: authorNote, label: Author note, required: false, hint: '著者に関する注記。*Equal contribution以外の注記をしたい場合のみ入力する。' }
+      - { name: note, label: Note, required: false, hint: '発表の種類。学会名の後ろに出る。　例：Demo、Poster、Short paper' }
+      - { name: volume, label: Volume, required: false, hint: 巻 }
+      - { name: number, label: Number, required: false, hint: 号（号に分けず随時公開する論文誌は空欄） }
+      - { name: pages, label: Pages, required: false, hint: 'ページ　例：1415–1421、または論文番号5442' }
+      - { name: award, label: Award, required: false, hint: '受賞　例：Best Paper Award' }
+      - name: noThumbnail
+        label: No thumbnail
+        widget: boolean
+        required: false
+        hint: サムネイル用の図をどうしても用意できない論文のみオン（「Coming soon」の枠も出さない場合）
+      - name: bibtexPreview
+        label: BibTeX（自動）
+        widget: bibtex-preview
+        required: false
+        hint: Bibボタンの中身。上の項目の入力内容から自動で生成される。
+      - name: bibtex
+        label: BibTeX
+        widget: text
+        required: false
+        hint: 自動で生成された内容を差し替えたいときのみ、ここに入力する。
+
+  - name: people
+    label: People
+    icon: group
+    label_singular: Member
+    folder: src/content/people
+    extension: yaml
+    format: yaml
+    create: true
+    identifier_field: name
+    slug: '{{slug}}'
+    summary: '{{fields.name}}'
+    sortable_fields:
+      fields: [kana]
+      default:
+        field: kana
+        direction: ascending
+    view_groups:
+      groups:
+        - { name: group, label: Group, field: group }
+      default: group
+    view_filters:
+      filters:
+        - { name: current, label: Current members, field: group, pattern: '^(faculty|phd-students|masters-students|undergraduate-students)$' }
+        - { name: faculty, label: Faculty, field: group, pattern: '^faculty$' }
+        - { name: phd-students, label: PhD Students, field: group, pattern: '^phd-students$' }
+        - { name: masters-students, label: "Master's Students", field: group, pattern: '^masters-students$' }
+        - { name: undergraduate-students, label: Undergraduate Students, field: group, pattern: '^undergraduate-students$' }
+        - { name: alumni, label: Alumni, field: group, pattern: '^alumni$' }
+    media_folder: /src/assets/images/people
+    public_folder: /images/people
+    fields:
+      - { name: name, label: Name, hint: '名・姓の順、英字　例：Hideo Saito', pattern: ['^[^\u3040-\u30ff\u3400-\u9fff]+$', '英字で入力してください'] }
+      - name: kana
+        label: かな
+        required: false
+        hint: |-
+          姓の読み、ひらがな（日本の方のみ）　例：さいとう
+        pattern: ['^[ぁ-ゟー]+$', 'ひらがなで入力してください']
+      - name: group
+        label: Group
+        widget: select
+        options:
+          - { label: Faculty, value: faculty }
+          - { label: PhD Students, value: phd-students }
+          - { label: "Master's Students", value: masters-students }
+          - { label: Undergraduate Students, value: undergraduate-students }
+          - { label: Alumni, value: alumni }
+      - name: grade
+        label: Grade
+        widget: number
+        value_type: int
+        min: 1
+        max: 4
+        required: false
+        hint: |-
+          学年の数字　例：M2 → 2、B4 → 4
+      - name: moreHeading
+        label: 以降はオプション（必要に応じて）
+        widget: heading
+        required: false
+      - { name: position, label: Position, required: false, hint: '役職　例：Guest Associate Professor (Global)' }
+      - name: photo
+        label: Photo
+        widget: image
+        choose_url: false
+        required: false
+        hint: 正方形を推奨。他の比率の場合は、中央が正方形に切り取られて表示される。
+        media_libraries:
+          default:
+            config: { filename_template: '{{slug}}', transformations: *picture_transformations }
+      - { name: homepage, label: Homepage, required: false, hint: 名前にHomepageへのリンクが埋め込まれる。, pattern: ['^https?://\S+$', 'https://から始まるURLを入力してください'] }
+      - { name: email, label: Email, required: false, hint: '@の代わりに[at]を使用　例：`hs[at]keio.jp`' }
+      - name: degree
+        label: Degree
+        widget: select
+        required: false
+        hint: 取得した学位（課程を続けて進んだ人は、最後の学位）
+        options:
+          - { label: PhD, value: phd }
+          - { label: "Master's", value: masters }
+          - { label: "Bachelor's", value: bachelors }
+      - { name: year, label: Year, widget: string, required: false, hint: 修了した年（2026年3月卒業なら2026）, pattern: ['^\d{4}$', '4桁の西暦で入力してください'] }
+
+  - name: news
+    label: News
+    icon: campaign
+    label_singular: News item
+    folder: src/content/news
+    extension: md
+    format: frontmatter
+    create: true
+    identifier_field: title
+    slug: '{{fields.year}}-{{fields.month}}-{{slug}}'
+    summary: '{{fields.year}}/{{fields.month}} · {{fields.title}}'
+    sortable_fields:
+      fields: [slug]
+      default:
+        field: slug
+        direction: descending
+    view_groups:
+      groups:
+        - { name: year, label: Year, field: slug, pattern: '^\d{4}' }
+      default: year
+    fields:
+      - name: title
+        label: Title
+        hint: |-
+          1文で簡潔に。　例：Ryo Hachiuma's paper was accepted to MICCAI 2020.
+          論文の採択・受賞のNewsは、Publicationsの編集画面の「この論文のNewsを作る」から作成すると簡単。
+      - { name: year, label: Year, widget: string, pattern: ['^\d{4}$', '4桁の西暦で入力してください'], hint: 'できごとの年。論文の採択は、採択された年（論文の年と違うことがある）' }
+      - name: month
+        label: Month
+        hint: 'できごとの月。論文の採択は、採択の通知が来た月（学会の開催月や論文誌の掲載月ではない）。発表の後で知らせが来たときも、採択された月にする'
+        widget: select
+        options:
+          - { label: '01', value: '01' }
+          - { label: '02', value: '02' }
+          - { label: '03', value: '03' }
+          - { label: '04', value: '04' }
+          - { label: '05', value: '05' }
+          - { label: '06', value: '06' }
+          - { label: '07', value: '07' }
+          - { label: '08', value: '08' }
+          - { label: '09', value: '09' }
+          - { label: '10', value: '10' }
+          - { label: '11', value: '11' }
+          - { label: '12', value: '12' }
+      - name: paper
+        label: Paper
+        widget: relation
+        collection: publications
+        value_field: '{{slug}}'
+        search_fields: [title, shortName]
+        display_fields: ['{{year}} · {{title}}']
+        required: false
+        hint: 論文に関するNewsの場合は、その論文を選ぶ（View paperのリンクが付く）。\nその他のNewsの場合は、(なし)を選ぶ。
+      - name: link
+        label: Link
+        widget: object
+        required: false
+        hint: 論文以外のNewsで、リンクを付けたい場合
+        fields:
+          - name: page
+            label: Destination
+            widget: select
+            dropdown_threshold: 10
+            hint: リンク先
+            options:
+              - { label: For B3, value: for-b3 }
+              - { label: For B3（説明会・懇親会の日程）, value: for-b3-sessions }
+              - { label: Research, value: research }
+              - { label: People, value: people }
+              - { label: Contact, value: contact }
+              - { label: 外部サイト, value: external }
+          - name: url
+            label: URL
+            required: false
+            hint: リンク先のページのURLを貼り付ける。
+            pattern: ['^https?://\S+$', 'https://から始まるURLを入力してください']
+          - { name: label, label: Label, hint: 'リンクを埋め込む文字　例：View For B3、Read article、For B3を見る' }
+      - { name: hidden, label: Hidden, widget: boolean, required: false, hint: オンにすると、サイトに載らない。 }
+      - name: xPost
+        label: X post
+        widget: post-text
+        kind: news
+        required: false
+
+  - divider: true
+  - name: pages
+    label: Pages
+    label_singular: Page
+    icon: web
+    files:
+      - name: home
+        label: 'Home: Hero'
+        file: src/data/home.yaml
+        media_folder: /src/assets/images/home
+        public_folder: /images/home
+        fields:
+          - { name: title, label: Title, hint: Homeの写真の上の大きな見出し }
+          - name: lead
+            label: Lead
+            widget: list
+            hint: 見出しの下の紹介文（1段落1項目）
+            field: { name: paragraph, label: Paragraph, widget: text }
+          - name: photos
+            label: Photos
+            widget: list
+            min: 1
+            hint: Heroセクションのスライド写真。この順で3秒ごとに切り替わって出る。横長の写真がよい。
+            field: { name: photo, label: Photo, widget: image, choose_url: false, media_libraries: { default: { config: { filename_template: 'hero-{{uuid_short}}', transformations: *picture_transformations } } } }
+
+      - name: research-themes
+        label: 'Research: Themes'
+        file: src/data/research-themes.yaml
+        fields:
+          - name: themes
+            label: Themes
+            hint: |-
+              この順でResearch・Home・For B3に並ぶ。年に1回ほど見直す。
+              説明には、載せた論文で裏付けられることのみを書く。
+            widget: list
+            summary: '{{fields.title}}'
+            fields:
+              - { name: id, label: ID, hint: 'ページ内リンク用の短い名前　例：event-vision（`/research/#event-vision`）', pattern: ['^[a-z0-9-]+$', '英小文字・数字・ハイフンで入力してください'] }
+              - { name: title, label: Title }
+              - { name: question, label: Question, hint: 問いかけ（英語1文） }
+              - { name: summary, label: Summary, widget: text, hint: 1段落1行（改行は次の段落として扱われる） }
+              - name: papers
+                label: Papers
+                hint: スライドに出る代表論文（最低3本、最大5本）
+                widget: relation
+                collection: publications
+                multiple: true
+                min: 3
+                max: 5
+                value_field: '{{slug}}'
+                search_fields: [title, shortName]
+                display_fields: ['{{year}} {{title}}']
+              - { name: titleJa, label: テーマ名（日本語）, hint: For B3のResearch Fields用 }
+              - { name: summaryJa, label: 説明（日本語）, widget: text, hint: For B3のResearch Fields用（1〜2文、簡潔に）、1段落1行（改行は次の段落として扱われる） }
+          - { name: more, label: And more…, widget: text, hint: Researchページの最後に出る、主要テーマに入らない研究の紹介、1段落1行（改行は次の段落として扱われる） }
+
+      - name: faculty-order
+        label: 'People: Faculty order'
+        file: src/data/faculty-order.yaml
+        fields:
+          - name: faculty
+            label: Faculty
+            hint: PeopleのFacultyの並び順をここで指定できる（指定しない人は、その後に姓のアルファベット順で並ぶ）。
+            widget: relation
+            collection: people
+            filters:
+              - { field: group, values: [faculty] }
+            multiple: true
+            dropdown_threshold: 0
+            value_field: '{{slug}}'
+            search_fields: [name]
+            display_fields: [name]
+
+      - name: b3-info-sessions
+        label: 'For B3: Meet the Lab'
+        file: src/data/b3-info-sessions.yaml
+        fields:
+          - { name: id, widget: hidden, default: b3-info-sessions }
+          - name: fiscalYear
+            label: 年度
+            widget: string
+            pattern: ['^\d{4}$', '4桁の西暦で入力してください']
+            hint: |-
+              毎年秋、日程が決まったら年度と日程を差し替える。
+              全日程が過ぎると、ページは自動で「終了しました」に変わる。
+          - name: sessions
+            label: 日程
+            hint: 説明会・懇親会（この順に①②③…と並ぶ）
+            widget: list
+            min: 1
+            fields:
+              - { name: date, label: 日付, widget: datetime, time_format: false, format: YYYY-MM-DD }
+              - { name: time, label: 開始時刻, hint: '例：18:10', pattern: ['^\d{1,2}:\d{2}$', '18:10のように入力してください'] }
+              - name: kind
+                label: 種類
+                widget: select
+                options: [説明会, 懇親会]
+              - { name: professor, label: 英雄先生の参加, widget: boolean, default: false, hint: 参加予定ならオン }
+          - { name: place, label: 開催場所 }
+          - { name: details, label: 補足, required: false, hint: 開催場所の下に出て、Xの投稿にも入る。1行で短めに（例：途中入退室可、各回1時間程度の予定です！） }
+          - { name: note, label: ひとこと, required: false, hint: 日程の下に出る（Xの投稿には入らない）。 }
+          - { name: slidesUrl, label: 研究室紹介スライド, required: false, hint: スライドのURL（空のときは、スライドの文とボタンは出ない）, pattern: ['^https?://\S+$', 'https://から始まるURLを入力してください'] }
+          - name: xPost
+            label: Xへの投稿
+            widget: post-text
+            kind: sessions
+            required: false
+
+      - name: for-b3
+        label: 'For B3: Intro, Message from Prof. Saito, FAQ'
+        file: src/data/for-b3.yaml
+        fields:
+          - { name: intro, label: 冒頭の文, widget: text, hint: 1段落1行（改行は次の段落として扱われる） }
+          - name: professorMessage
+            label: Message from Prof. Saito
+            widget: text
+            hint: 1段落1行（改行は次の段落として扱われる）
+          - name: faq
+            label: FAQ
+            widget: list
+            summary: '{{fields.question}}'
+            fields:
+              - { name: question, label: 質問 }
+              - { name: answer, label: 回答, widget: text, hint: 1段落1行（改行は次の段落として扱われる） }
+
+      - name: for-b3-schedule
+        label: 'For B3: Annual Schedule'
+        file: src/data/for-b3-schedule.yaml
+        fields:
+          - { name: intro, label: 冒頭の文, widget: text, hint: 1段落1行（改行は次の段落として扱われる） }
+          - name: items
+            label: 予定
+            hint: この順に並ぶ。
+            widget: list
+            min: 1
+            summary: '{{fields.period}} · {{fields.title}}'
+            fields:
+              - { name: period, label: 時期, hint: '例：7月上旬、秋学期' }
+              - { name: title, label: やること, hint: '例：基礎輪講' }
+              - { name: body, label: 説明, widget: text, hint: 1段落1行（改行は次の段落として扱われる） }
+
+      - name: for-b3-voices
+        label: 'For B3: Why Hideo Saito Lab?'
+        file: src/data/for-b3-voices.yaml
+        fields:
+          - name: voices
+            label: Voices
+            hint: 先輩の声。学年はPeopleから自動で決まり、保存すると学年順に並ぶ。
+            widget: list
+            collapsed: true
+            summary: '{{fields.group}} · {{fields.name}}'
+            fields:
+              - name: person
+                label: People
+                hint: 回答した人
+                widget: relation
+                collection: people
+                value_field: '{{slug}}'
+                search_fields: [name, kana]
+                display_fields: ['{{name}}']
+              - { name: group, widget: hidden }
+              - { name: name, label: 名前, hint: '漢字の名前は漢字で、姓と名の間に半角スペース　例：斎藤 英雄' }
+              - { name: reason, label: 選んだ理由, widget: text, hint: 改行はそのまま改行として表示される（箇条書きにも使える） }
+              - { name: goodPoints, label: 良いところ, widget: text, hint: 改行はそのまま改行として表示される（箇条書きにも使える） }
+
+      - name: lab-life
+        label: 'For B3: Lab Life'
+        file: src/data/lab-life.yaml
+        media_folder: /src/assets/images/lab-life
+        public_folder: /images/lab-life
+        fields:
+          - { name: lead, label: 冒頭の文, widget: text, hint: 写真の上に出る文章、1段落1行（改行は次の段落として扱われる） }
+          - name: photos
+            label: Photos
+            hint: For B3のLab LifeとHomeの写真の帯に、この順で並ぶ。
+            widget: list
+            min: 1
+            summary: '{{fields.caption}}'
+            fields:
+              - { name: image, label: Image, widget: image, choose_url: false, hint: 縦横比は任意, media_libraries: { default: { config: { filename_template: 'lab-life-{{uuid_short}}', transformations: *picture_transformations } } } }
+              - { name: caption, label: キャプション, hint: For B3で写真の下に出る。 }
+
+      - name: contact
+        label: Contact
+        file: src/data/contact.yaml
+        fields:
+          - { name: lead, label: Lead, widget: text, hint: 冒頭の文、1段落1行（改行は次の段落として扱われる） }
+          - { name: building, label: Building }
+          - { name: professorRoom, label: "Prof. Saito's Office" }
+          - { name: studentRooms, label: Student Rooms, widget: list }
+          - { name: address, label: Address }
+          - { name: phone, label: Phone }
+          - { name: phoneExtension, label: Extension, required: false, hint: 内線 }
+          - name: mapEmbedUrl
+            label: Map
+            required: false
+            pattern: ['^https?://\S+$', 'https://から始まるURLを入力してください']
+            hint: Googleマップの「共有」→「地図を埋め込む」に出るiframeのsrcの部分
+
+      - name: site
+        label: 'Footer: SNS, Collaborations'
+        file: src/data/site.yaml
+        fields:
+          - name: social
+            label: SNS
+            hint: フッターとContactに出るSNSのアカウント（For B3には、DMを受け付けるXとInstagramのみが出る）
+            widget: list
+            summary: '{{fields.label}}'
+            fields:
+              - name: platform
+                label: Platform
+                widget: select
+                options:
+                  - { label: X, value: x }
+                  - { label: Instagram, value: instagram }
+                  - { label: YouTube, value: youtube }
+                  - { label: その他, value: other }
+              - { name: label, label: Label, hint: 'ContactとFor B3のボタンに出る名前（フッターではアイコンのみ）　例：X、Instagram' }
+              - { name: url, label: URL, pattern: ['^https?://\S+$', 'https://から始まるURLを入力してください'] }
+          - name: collaborations
+            label: Collaborations
+            widget: object
+            fields:
+              - { name: universities, label: Universities, widget: list }
+              - { name: companies, label: Companies, widget: list }
