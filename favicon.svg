@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 201 202.8" xml:space="preserve" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round">
+    <style>
+        .line_favicon {
+            fill: #000;
+        }
+        @media (prefers-color-scheme: dark) {
+            .line_favicon {
+                fill: #fff;
+            }
+        }
+    </style>
+    <g>
+        <path class="line_favicon" d="M101.1 202.8h9.7L176.6 0h-13.2L101 191.7"/>
+        <path class="line_favicon" d="M101.1 191.7 39 0H25.6l39 119.8 26.9 83h9.6"/>
+        <path class="eye_favicon" d="M62.8 49c0-11.1 16.8-20 37.5-20s37.5 8.9 37.5 20c0 11-16.8 20-37.5 20s-37.5-9-37.5-20Z" fill="#559bd7"/>
+        <path class="line_favicon" d="M93 191.7h16.3v11H93v-11Z"/>
+    </g>
+</svg>
